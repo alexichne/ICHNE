@@ -1,0 +1,249 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
+library(ggfortify)
+library(ggthemes)
+library(lubridate)
+library(bbplot)
+library(dplyr)
+library(markdown)
+library(ggrepel)
+library(tidyr)
+library(tidyverse)
+library(plyr)
+library(extrafont)
+library(showtext)
+#library(knitr)
+library(kableExtra)
+df8to8 <- read.csv("Z:/Scripts/Statistics/8to8.csv")
+df8to8$date <- dmy(df8to8$date)
+df8to8Last <-  df8to8 %>% slice_tail(n=1)
+df8to8<-tail(df8to8,56)
+df8to8Team <- subset(df8to8, team==df8to8Last$team)
+todays_data <- read.csv("Z:/Scripts/Statistics/todays_data.csv")
+
+titles<- c("Work in Progress","Delayed > 12 hours", "Delayed > 24 hours")
+startOfShift <- c(df8to8Last$wip,df8to8Last$delayed12,df8to8Last$delayed24)
+endOfShift <- c(df8to8Last$backlog,df8to8Last$delayed12end,df8to8Last$delayed24end)
+
+backlogTable <- data.frame(titles, startOfShift,endOfShift)
+colnames(backlogTable) <- c("", "Start of shift", "End of shift")
+kable(backlogTable)
+total <- (df8to8Last$PSP1TAT + df8to8Last$ovenTAT + df8to8Last$PSP2TAT + df8to8Last$mod1TAT + df8to8Last$ampTAT + df8to8Last$authTAT)
+meanTotal <- (mean(df8to8Team$PSP1TAT) + mean(df8to8Team$ovenTAT) +mean(df8to8Team$PSP2TAT) + mean(df8to8Team$mod1TAT) + mean(df8to8Team$ampTAT) + mean(df8to8Team$authTAT))
+
+titles <- c("PSP1 end to oven entry","Oven entry to oven exit","Oven exit to PSP2 entry","PSP2 entry to Module 1 start","Amplitude running time", "Authorisation time","Total","TAT (resulted this shift)")
+shiftTAT <- c(paste(df8to8Last$PSP1TAT%/%60, " hr ",df8to8Last$PSP1TAT%%60," mins",sep=""), paste(df8to8Last$ovenTAT%/%60, " hr ",df8to8Last$ovenTAT%%60," mins",sep=""),paste(df8to8Last$PSP2TAT%/%60, " hr ",df8to8Last$PSP2TAT%%60," mins",sep=""),paste(df8to8Last$mod1TAT%/%60, " hr ",df8to8Last$mod1TAT%%60," mins",sep=""),paste(df8to8Last$ampTAT%/%60, " hr ",df8to8Last$ampTAT%%60," mins",sep=""),paste(df8to8Last$authTAT%/%60, " hr ",df8to8Last$authTAT%%60," mins",sep=""),paste(total%/%60, " hr ",total%%60," mins",sep=""),paste(df8to8Last$TAT%/%60, " hr ",df8to8Last$TAT%%60," mins",sep=""))
+
+targetTAT <- c("0 hr 8 mins","1 hr 40 mins","0 hr 20 mins", "1 hr 0 mins", "3 hr 20 mins", "0 hr 30 min", "8 hr 0 min","8 hr 0 min")
+
+averageTAT <- c(paste(mean(df8to8Team$PSP1TAT)%/%60, " hr ", round(mean(df8to8Team$PSP1TAT)%%60,0), " min", sep=""),
+                paste(mean(df8to8Team$ovenTAT)%/%60, " hr ",round(mean(df8to8Team$ovenTAT)%%60,0), " min", sep=""),
+                paste(mean(df8to8Team$PSP2TAT)%/%60, " hr ",round(mean(df8to8Team$PSP2TAT)%%60,0), " min", sep=""), 
+                paste(mean(df8to8Team$mod1TAT)%/%60, " hr ",round(mean(df8to8Team$mod1TAT)%%60,0), " min", sep=""),
+                paste(mean(df8to8Team$ampTAT)%/%60, " hr ",round(mean(df8to8Team$ampTAT)%%60,0), " min", sep=""),
+                paste(mean(df8to8Team$authTAT)%/%60, " hr ",round(mean(df8to8Team$authTAT)%%60,0), " min", sep=""),
+                paste((meanTotal)%/%60, " hr ",round(meanTotal%%60,0), " min", sep=""),
+                paste(mean(df8to8Team$TAT)%/%60, " hr ",round(mean(df8to8Team$TAT)%%60,0), " min", sep=""))
+
+tatTable <- data.frame(titles,shiftTAT,targetTAT,averageTAT)
+colnames(tatTable) <- c("", "TAT this shift", "Target","Average TAT (previous 4 weeks)")
+kable(tatTable)
+
+titles <- c("Registered in PSP1","Entered ovens","PSP2","Started on module 1","Resulted")
+shiftTotals <- c(df8to8Last$PSP1, df8to8Last$ovens,df8to8Last$PSP2,df8to8Last$mod1,df8to8Last$resulted)
+shiftRacks <- c(paste(round(df8to8Last$PSP1/36,0), " racks", sep=""),paste(round(df8to8Last$ovens/36,0), " racks", sep=""),paste(round(df8to8Last$PSP2/36,0), " racks", sep=""),paste(round(df8to8Last$mod1/376,0), " runs", sep=""),paste(round(df8to8Last$resulted/376,0), " runs", sep=""))
+averageTotals <- c(round(mean(df8to8Team$PSP1),0),round(mean(df8to8Team$ovens),0),round(mean(df8to8Team$PSP2),0),round(mean(df8to8Team$mod1),0),round(mean(df8to8Team$resulted),0))
+averageRacks <- c(paste(round(mean(df8to8$PSP1/36),0), " racks", sep=""),paste(round(mean(df8to8$ovens/36),0), " racks", sep=""),paste(round(mean(df8to8$PSP2/36),0), " racks", sep=""),paste(round(mean(df8to8$mod1/376),0), " runs", sep=""),paste(round(mean(df8to8$resulted/376),0), " runs", sep=""))
+totalTable <- data.frame(titles,shiftTotals,shiftRacks,averageTotals, averageRacks)
+colnames(totalTable) <- c("Number of samples", "This shift", "Units","Average this month","Average units")
+kable(totalTable)
+
+df8to8Team$date <- as.factor(df8to8Team$date)
+```
+
+---
+title: "Shift Report"
+date: `r paste(df8to8Last$date, ",  ",df8to8Last$day," ", df8to8Last$times,sep="")`
+author: `r paste("Team",df8to8Last$team)`
+output:   html_document
+---
+
+
+<BR><BR>
+
+`r kable(backlogTable, align='ccc')%>%   kable_styling(full_width = F, position="center")`
+<BR><BR><BR><BR>
+<center><font size="+2"><B><U>Total Samples Processed.</font></B></U></center>
+<BR><BR>
+
+`r kable(totalTable, align='ccccc')%>%   kable_styling(full_width = T)`
+<BR><BR>
+```{r totals, echo=FALSE, fig.show="hold", out.width="50%"}
+
+ggplot(df8to8Team, aes(x=date,y=PSP1))+
+  geom_col(size=1.5,fill="#990000")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "Total registered", subtitle = paste("Average: ", round(mean(df8to8Team$PSP1),0), sep="")) +
+      scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+ggplot(df8to8Team, aes(x=date,y=resulted))+
+  geom_col(size=1.5, fill="#588300")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "Total Resulted", subtitle = paste("Average: ", round(mean(df8to8Team$resulted),0), sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+kpidf4 <- select(df8to8Team, date, labVoids, inconclusives,sqVoids)
+kpidf4 <- tidyr::pivot_longer(kpidf4, -date, names_to = "type", values_to = "value")
+ggplot(kpidf4, aes(x = date, y = value, fill = type)) +
+  geom_bar(position="stack", stat="identity")+
+  #scale_x_date(breaks = xlimits,expand = c(0, 0), date_labels = "%d/%m")+
+    scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  labs(title="Shift voids", subtitle =  paste("Average: ", round(mean(df8to8Team$totalVoids),0), sep=""))+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  scale_fill_manual(values = c("sqVoids" = "#FAAB18", "labVoids" = "#990000", "inconclusives" = "#1380A1"), labels=c("Sample quality", "Lab voids", "Inconclusive")) +
+    scale_color_manual(values = c("sqVoids" = "#FAAB18", "labVoids" = "#990000", "inconclusives" = "#1380A1"), labels=c("Sample quality", "Lab voids", "Inconclusive")) +
+  geom_label_repel(data = filter(kpidf4, date == last(date)), aes(label = value, color=type,fill=NULL), show.legend=F, size = 4,position = position_stack()) +
+  bbc_style()
+ 
+ggplot(df8to8Team, aes(x=date,y=positivity, group=1))+
+  geom_line(colour="#1380A1", size=1.5)+
+  geom_point(colour="#1380A1")+
+  ylim(0, 40)+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+    scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  labs(title = "Positivity", subtitle = "Percentage of samples testing positive") +
+  geom_label_repel(data = filter(df8to8Team, date == last(date)), aes(label = positivity), show.legend=F, colour="#1380A1", size = 4) +
+  bbc_style()
+```
+<BR><BR><BR><BR><BR><BR>
+<font size="+2"><B><U><center>Turnaround times.</center></font></B></U>
+<BR><BR>
+
+
+
+`r kable(tatTable, align='cccc')%>%   kable_styling(full_width = F, position="center")`
+<BR><BR>
+```{r tat, echo=FALSE, fig.show="hold", out.width="50%"}
+
+
+
+ggplot(df8to8Team, aes(x=date,y=PSP1TAT))+
+  geom_col(size=1.5,fill="#990000")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "PSP1 to ovens", subtitle = paste("Average: ", round(mean(df8to8Team$PSP1TAT),0), " min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+ggplot(df8to8Team, aes(x=date,y=ovenTAT))+
+  geom_col(size=1.5, fill="#588300")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "Time in ovens", subtitle = paste("Average: ", round(mean(df8to8Team$ovenTAT),0), " min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+
+ggplot(df8to8Team, aes(x=date,y=PSP2TAT))+
+  geom_col(size=1.5, fill="#1380A1")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "Ovens to PSP2", subtitle = paste("Average: ", round(mean(df8to8Team$PSP2TAT),0), " min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+ggplot(df8to8Team, aes(x=date,y=mod1TAT))+
+  geom_col(size=1.5, fill="#FAAB18")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "PSP2 start to Mod 1 start", subtitle = paste("Average: ", round(mean(df8to8Team$mod1TAT),0), " min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+
+ggplot(df8to8Team, aes(x=date,y=ampTAT))+
+  geom_col(size=1.5, fill="#814897")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "Time in Amplitude", subtitle = paste("Average: ", round(mean(df8to8Team$ampTAT),0), " min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+ggplot(df8to8Team, aes(x=date,y=authTAT))+
+  geom_col(size=1.5, fill="#cf6000")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "Authorisation Time", subtitle = paste("Average: ", round(mean(df8to8Team$authTAT),0), " min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+```
+
+```{r tat2, echo=FALSE, fig.show="hold",fig.align="center"}
+ggplot(df8to8Team, aes(x=date,y=TAT))+
+  geom_col(size=1.5,fill="#990000")+
+  labs(x="Date",y="Mean TAT")+
+  geom_hline(yintercept = 0, size = 1, colour = "#333333") +
+  labs(title = "End-to-end TAT", subtitle = paste("Average: ", round(mean(df8to8Team$TAT%/%60),0), " hr ",round(mean(df8to8Team$TAT%%60),0)," min", sep="")) +
+  scale_x_discrete(labels=substring(df8to8Team$day,1,1))+
+  bbc_style()
+
+```
+
+
+
+<BR><BR><BR>
+
+
+
+
+
+
+
+
+```{R usage,echo=F,fig.dim=c(12,8)}
+if (df8to8Last$shift=="Days"){
+st <- as_datetime(Sys.Date() -1  + hms("08:0:0"))
+et <- st + hms("11:59:59")}
+
+if (df8to8Last$shift=="Nights"){
+  st <- as_datetime(Sys.Date() -1  - hms("04:0:0"))
+  et <- st + hms("11:59:59")}
+
+todays_data$DateStarted = ymd_hms(todays_data$DateStarted)
+todays_data$DateAmplitudeCompleted = ymd_hms(todays_data$DateAmplitudeCompleted)
+todays_data$PreparationTime = ymd_hms(todays_data$PreparationTime)
+
+amplitudeUsage <- unique(select(todays_data, DateStarted, DateAmplitudeCompleted, QpcrInstrument,CompressionPlateId, PreparationTime))
+amplitudeUsage$QpcrInstrument <- as.integer(amplitudeUsage$QpcrInstrument)
+xlimits2 <- c(as_datetime(st) ,st + hms("3:0:0"),st + hms("6:0:0"),st + hms("9:0:0") ,st + hms("12:0:0"))
+amplitudeUsage2 <- subset(amplitudeUsage, !is.na(PreparationTime))
+amplitudeUsage2 <- unique(select(amplitudeUsage2,QpcrInstrument,PreparationTime))
+amplitudeUsage2 <- subset(amplitudeUsage2, PreparationTime-hms("0:55:0") >= st & PreparationTime-hms("0:55:0") <= et)
+ totals=c(nrow(subset(amplitudeUsage2, QpcrInstrument==1)), nrow(subset(amplitudeUsage2, QpcrInstrument==2)),nrow(subset(amplitudeUsage2, QpcrInstrument==3)),nrow(subset(amplitudeUsage2, QpcrInstrument==4)),nrow(subset(amplitudeUsage2, QpcrInstrument==5)),nrow(subset(amplitudeUsage2, QpcrInstrument==6)),nrow(subset(amplitudeUsage2, QpcrInstrument==7)),nrow(subset(amplitudeUsage2, QpcrInstrument==8)),nrow(subset(amplitudeUsage2, QpcrInstrument==9)),nrow(subset(amplitudeUsage2, QpcrInstrument==10)),nrow(subset(amplitudeUsage2, QpcrInstrument==11)),nrow(subset(amplitudeUsage2, QpcrInstrument==12)),nrow(subset(amplitudeUsage2, QpcrInstrument==13)))
+   totals <- as.character(totals)
+   
+ggplot(amplitudeUsage, aes(x=DateStarted,xend=DateAmplitudeCompleted,y=QpcrInstrument+0.2,yend=QpcrInstrument+0.2, color="mod2"))+
+  labs(title="Amplitude usage", subtitle = "Timeline of Amplitude system operation")+
+  geom_segment(size=6)+
+    scale_x_datetime(breaks= xlimits2, labels=c("8","11","2","5","8"))+
+  scale_y_reverse(breaks=c(1,2,3,4,5,6,7,8,9,10,11,12,13), limits=c(13.5,0.5), sec.axis=sec_axis(~.*1,breaks=c(1,2,3,4,5,6,7,8,9,10,11,12,13), labels=totals))+
+  geom_segment(data=amplitudeUsage, aes(x=PreparationTime-hms("0:55:0"),xend=PreparationTime, y=QpcrInstrument-0.2, yend=QpcrInstrument-0.2, colour="mod1"), size=6)+
+  geom_vline(xintercept=st)+
+  geom_vline(xintercept =  (st+hms("11:59:59")))+
+  coord_cartesian(xlim = c(st, st+hms("11:59:59")))+
+  scale_colour_manual(labels = c("Module 1", "Module2"), values = c(mod1 = "#990000", mod2 = "#1380A1"))+
+  bbc_style()
+
+
+```
+Column on left is bay number, column on right is total runs started.
+
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"data:image/png;base64,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\" style=\"float: right;width: 251px;\"/>')
+   });
+</script>
